@@ -320,7 +320,7 @@
 - name: Wait for Kafka to be ready
   ansible.builtin.wait_for:
     port: 9092
-    host: localhost
+    host: '{{ ansible_default_ipv4.address }}'
     delay: 60
     timeout: 180
   when: kafka_start
