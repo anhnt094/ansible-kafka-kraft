@@ -130,6 +130,9 @@ kafka_controller_quorum_voters: '1@localhost:9093'
 # Metadata log directory - where KRaft metadata is stored
 kafka_metadata_log_dir: /var/lib/kafka/kraft-combined-logs
 
+# Optional: Override cluster UUID (leave empty to auto-generate)
+# kafka_cluster_uuid_override: ""
+
 # Inter-broker listener name
 kafka_inter_broker_listener_name: 'PLAINTEXT'
 

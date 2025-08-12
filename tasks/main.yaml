@@ -144,9 +144,20 @@
   tags:
     - kafka_config
 
-- name: Generate cluster UUID for KRaft
+- name: Generate cluster UUID for KRaft (only on first node)
   ansible.builtin.shell: '{{ kafka_dir }}/bin/kafka-storage.sh random-uuid'
-  register: kafka_cluster_uuid
+  register: kafka_cluster_uuid_generated
+  when:
+    - not kraft_metadata_formatted.stat.exists
+    - inventory_hostname == ansible_play_hosts[0]
+  run_once: true
+  delegate_to: '{{ ansible_play_hosts[0] }}'
+  tags:
+    - kafka_config
+
+- name: Set cluster UUID fact for all nodes
+  ansible.builtin.set_fact:
+    kafka_cluster_uuid: "{{ hostvars[ansible_play_hosts[0]]['kafka_cluster_uuid_generated']['stdout'] | default(kafka_cluster_uuid_override | default('')) }}"
   when: not kraft_metadata_formatted.stat.exists
   tags:
     - kafka_config
@@ -154,7 +165,7 @@
 - name: Format storage directories for KRaft
   ansible.builtin.shell: |
     sudo -u {{ kafka_user }} {{ kafka_dir }}/bin/kafka-storage.sh format \
-      -t {{ kafka_cluster_uuid.stdout }} \
+      -t {{ kafka_cluster_uuid }} \
       -c {{ kafka_dir }}/config/server.properties
   when: not kraft_metadata_formatted.stat.exists
   tags:
