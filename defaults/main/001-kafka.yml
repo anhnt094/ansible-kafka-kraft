@@ -3,7 +3,7 @@
 # kafka_download_base_url should be set to https://archive.apache.org/dist/kafka/ for older versions than the current
 kafka_download_base_url: https://downloads.apache.org/kafka
 kafka_download_validate_certs: yes
-kafka_version: 3.8.1
+kafka_version: 4.0.0
 kafka_scala_version: 2.13
 
 # The kafka user and group to create files/dirs with and for running the kafka service
@@ -12,7 +12,7 @@ kafka_user: kafka
 kafka_group: kafka
 
 kafka_root_dir: /opt
-kafka_dir: "{{ kafka_root_dir }}/kafka"
+kafka_dir: '{{ kafka_root_dir }}/kafka'
 
 # The application log folder (e.g: server.log)
 kafka_log_dir: /var/log/kafka
@@ -24,11 +24,12 @@ kafka_restart: yes
 
 ############################# Server #############################
 
-# The id of the broker. This must be set to a unique integer for each broker.
-kafka_broker_id: 0
+# The id of the broker/controller. This must be set to a unique integer for each broker/controller.
+# In KRaft mode, this serves as both broker.id and node.id
+kafka_broker_id: 1
 
 # The Java heap size (memory) allocation (xmx, xms)
-kafka_java_heap: "-Xms1G -Xmx1G"
+kafka_java_heap: '-Xms1G -Xmx1G'
 
 # The number of threads to use for various background processing tasks
 kafka_background_threads: 10
@@ -40,8 +41,10 @@ kafka_background_threads: 10
 #   EXAMPLE:
 #     listeners = PLAINTEXT://your.host.name:9092
 #listeners=PLAINTEXT://:9092
+# Listeners for KRaft mode - includes controller listener
 kafka_listeners:
-  - "PLAINTEXT://:9092"
+  - 'PLAINTEXT://:9092'
+  - 'CONTROLLER://:9093'
 
 # Hostname and port the broker will advertise to producers and consumers. If not set,
 # it uses the value for "listeners" if configured.  Otherwise, it will use the value
@@ -110,26 +113,35 @@ kafka_default_replication_factor: 1
 
 kafka_group_initial_rebalance_delay_ms: 0
 
-############################# Zookeeper #############################
+############################# KRaft Configuration #############################
 
-# Zookeeper connection string (see zookeeper docs for details).
-# This is a comma separated host:port pairs, each corresponding to a zk
-# server. e.g. "127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002".
-# You can also append an optional chroot string to the urls to specify the
-# root directory for all kafka znodes.
-kafka_zookeeper_connect: "localhost:2181"
+# Process roles: 'broker', 'controller', or 'broker,controller'
+# For development, you can run both roles on the same node
+kafka_process_roles: 'broker,controller'
 
-# the directory where the snapshot is stored.
-kafka_zookeeper_data_dir: /tmp/zookeeper
-# the port at which the clients will connect
-kafka_zookeeper_client_port: 2181
-# disable the per-ip limit on the number of connections since this is a non-production config
-kafka_zookeeper_max_client_cnxns: 0
+# Controller listener name - must be different from inter.broker.listener.name
+kafka_controller_listener_names: 'CONTROLLER'
+
+# Controller quorum voters in the format id@host:port
+# For a single node setup: "1@localhost:9093"
+# For multi-node: "1@kafka1:9093,2@kafka2:9093,3@kafka3:9093"
+kafka_controller_quorum_voters: '1@localhost:9093'
+
+# Metadata log directory - where KRaft metadata is stored
+kafka_metadata_log_dir: /var/lib/kafka/kraft-combined-logs
+
+# Inter-broker listener name
+kafka_inter_broker_listener_name: 'PLAINTEXT'
+
+# Listener security protocol map
+kafka_listener_security_protocol_map:
+  - 'CONTROLLER:PLAINTEXT'
+  - 'PLAINTEXT:PLAINTEXT'
+  - 'SSL:SSL'
+  - 'SASL_PLAINTEXT:SASL_PLAINTEXT'
+  - 'SASL_SSL:SASL_SSL'
 
 ############################# Timeout #############################
-
-# Timeout in ms for connecting to zookeeper
-kafka_zookeeper_connection_timeout_ms: 6000
 
 # Offset commit will be delayed until all replicas for the offsets topic receive the commit or this timeout is reached. This is similar to the producer request timeout.
 kafka_offsets_commit_timeout_ms: 5000
@@ -142,7 +154,7 @@ kafka_log_cleaner_backoff_ms: 15000
 
 ########################### Kafka Connect #############################
 
-kafka_connect_bootstrap_servers: "localhost:9092"
+kafka_connect_bootstrap_servers: 'localhost:9092'
 kafka_connect_group_id: connect-cluster
 kafka_connect_key_converter: org.apache.kafka.connect.json.JsonConverter
 kafka_connect_value_converter: org.apache.kafka.connect.json.JsonConverter
@@ -162,14 +174,13 @@ kafka_connect_offset_storage_file_filename: /tmp/connect.offsets
 
 ############################# Producer #############################
 
-kafka_producer_bootstrap_servers: "localhost:9092"
+kafka_producer_bootstrap_servers: 'localhost:9092'
 kafka_producer_compression_type: none
 
 ############################# Consumer #############################
 
 kafka_consumer_group_id: kafka-consumer-group
-kafka_consumer_bootstrap_servers: "localhost:9092"
-
+kafka_consumer_bootstrap_servers: 'localhost:9092'
 # Example authentication
 ############################# AUTHENTICATION #############################
 # kafka_listener_auth:

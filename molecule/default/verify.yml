@@ -90,3 +90,39 @@
           - "'kafka.service' in ansible_facts.services"
           - ansible_facts.services['kafka.service'].state == 'running'
           - ansible_facts.services['kafka.service'].status == 'enabled'
+
+    - name: Register KRaft metadata directory status
+      ansible.builtin.stat:
+        path: '/var/lib/kafka/kraft-combined-logs'
+      register: kraft_metadata_dir
+
+    - name: Assert that KRaft metadata directory is created
+      ansible.builtin.assert:
+        that:
+          - kraft_metadata_dir.stat.exists
+          - kraft_metadata_dir.stat.isdir
+          - kraft_metadata_dir.stat.pw_name == 'kafka'
+          - kraft_metadata_dir.stat.gr_name == 'kafka'
+
+    - name: Register KRaft meta.properties file status
+      ansible.builtin.stat:
+        path: '/var/lib/kafka/kraft-combined-logs/meta.properties'
+      register: kraft_meta_properties
+
+    - name: Assert that KRaft meta.properties file exists
+      ansible.builtin.assert:
+        that:
+          - kraft_meta_properties.stat.exists
+          - kraft_meta_properties.stat.isreg
+
+    - name: Check if Kafka is responding on port 9092
+      ansible.builtin.wait_for:
+        port: 9092
+        host: localhost
+        timeout: 10
+
+    - name: Check if controller is responding on port 9093
+      ansible.builtin.wait_for:
+        port: 9093
+        host: localhost
+        timeout: 10

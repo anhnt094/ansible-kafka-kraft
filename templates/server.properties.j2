@@ -15,13 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This configuration file is intended for use in ZK-based mode, where Apache ZooKeeper is required.
+# This configuration file is intended for use in KRaft mode, where Apache ZooKeeper is NOT required.
 # See kafka.server.KafkaConfig for additional details and defaults
 
 ############################# Server Basics #############################
 
 # The id of the broker. This must be set to a unique integer for each broker.
 broker.id={{ kafka_broker_id }}
+
+# KRaft mode configuration
+process.roles={{ kafka_process_roles }}
+node.id={{ kafka_broker_id }}
+controller.quorum.voters={{ kafka_controller_quorum_voters }}
+controller.listener.names={{ kafka_controller_listener_names }}
+inter.broker.listener.name={{ kafka_inter_broker_listener_name }}
+listener.security.protocol.map={{ kafka_listener_security_protocol_map | join(',') }}
+metadata.log.dir={{ kafka_metadata_log_dir }}
 
 # Enable auto creation of topic on the server
 auto.create.topics.enable={{ kafka_auto_create_topics_enable }}
@@ -140,19 +149,12 @@ log.segment.bytes={{ kafka_log_segment_bytes }}
 # to the retention policies
 log.retention.check.interval.ms={{ kafka_log_retention_check_interval_ms }}
 
-############################# Zookeeper #############################
+############################# KRaft Metadata Configuration #############################
 
-# Zookeeper connection string (see zookeeper docs for details).
-# This is a comma separated host:port pairs, each corresponding to a zk
-# server. e.g. "127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002".
-# You can also append an optional chroot string to the urls to specify the
-# root directory for all kafka znodes.
-zookeeper.connect={{ kafka_zookeeper_connect }}
+# KRaft mode does not use ZooKeeper. Metadata is stored in the metadata.log.dir.
+# The controller quorum manages cluster metadata through the KRaft consensus protocol.
 
 ############################# Timeout #############################
-
-# Timeout in ms for connecting to zookeeper
-zookeeper.connection.timeout.ms={{ kafka_zookeeper_connection_timeout_ms }}
 # Offset commit will be delayed until all replicas for the offsets topic receive the commit or this timeout is reached. This is similar to the producer request timeout.
 offsets.commit.timeout.ms={{ kafka_offsets_commit_timeout_ms }}
 # Max wait time for each fetcher request issued by follower replicas. This value should always be less than the replica.lag.time.max.ms at all times to prevent frequent shrinking of ISR for low throughput topics
