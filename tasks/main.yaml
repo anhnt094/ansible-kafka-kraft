@@ -153,10 +153,9 @@
 
 - name: Format storage directories for KRaft
   ansible.builtin.shell: |
-    {{ kafka_dir }}/bin/kafka-storage.sh format \
+    sudo -u {{ kafka_user }} {{ kafka_dir }}/bin/kafka-storage.sh format \
       -t {{ kafka_cluster_uuid.stdout }} \
       -c {{ kafka_dir }}/config/server.properties
-  become_user: '{{ kafka_user }}'
   when: not kraft_metadata_formatted.stat.exists
   tags:
     - kafka_config
